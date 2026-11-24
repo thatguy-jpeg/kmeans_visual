@@ -1,0 +1,26 @@
+Make me an interactive html page (one file) that teaches clustering.
+Use a 2D scatter plot of fake points (a few blobs plus some outliers) with a "new data" button.
+
+it should have:
+- k-means: step button (assign points, then move centroids), play/reset, and a slider for k. let me click on the plot to place the starting centroids myself, plus a "bad init" button so i can see it get stuck
+- an elbow chart of average distance to centroid vs k, so i can see the "right" k
+- hierarchical clustering: step button that merges the two closest clusters, shows centroids, and draws the dendrogram as it builds
+- a toggle between the two methods
+
+show the key formula for each (centroid = average of points, distance to centroid) and highlight whatever changes each step. keep it clean and easy to use.
+
+
+
+Clustering Lab is published. It has k-means and hierarchical clustering on fake blob-plus-outlier data, a method toggle and a "New data" button. I haven't opened it in a browser, so layout and click behavior are untested. I only syntax-checked the script and ran the clustering math in Node.
+
+- **k-means:**
+  - Step alternates between assigning points and moving centroids.
+  - Play/Pause, Reset and a k slider are there.
+  - Click the plot to place starting centroids.
+  - "Bad init" picks the worst of 80 random bunched starts, so it usually gets stuck. A start that is bad for one dataset can still recover on another, so try a few datasets.
+  - After it converges, it reports how far its cost is above the best found for that k.
+- **Elbow chart:** average distance to centroid for k=1 to 8, using the best of 10 runs per k. The detected elbow is highlighted and your current run is marked, so you can compare them.
+- **Hierarchical:** each step merges the closest pair of centroids. The merged cluster shows its centroid, and the dendrogram draws as you go. A slider lets you scrub back and forth through the merges.
+- **Formulas:** assign, centroid average and the cost formula for k-means; closest pair and the weighted centroid merge for hierarchical. The formula that just ran is highlighted yellow, along with changed points, cluster counts and centroid coordinates, plus a worked number example each step.
+
+One caveat: the outliers keep the elbow from being perfectly sharp. The curve flattens past the true k but never fully.

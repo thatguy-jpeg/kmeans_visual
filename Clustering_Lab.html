@@ -1,0 +1,549 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Clustering Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+/* Layout: graph-paper plot on the left, formulas + live numbers + chart stacked on the right. Highlighter yellow marks whatever changed this step. */
+:root{
+  --bg:#F3F6FA; --panel:#FFFFFF; --fg:#13202F; --muted:#5B6B7F; --line:#D6DDE8; --grid:#E6EBF2;
+  --btn-bg:#13202F; --btn-fg:#F3F6FA; --hl:#FFE066; --hl-soft:#FFF4BF; --pt:#8A98AB;
+  --font-display:'Space Grotesk',system-ui,sans-serif;
+  --font-body:'Inter',system-ui,-apple-system,sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1722; --panel:#172131; --fg:#E7EDF6; --muted:#93A3B8; --line:#2A3850; --grid:#202C40;
+    --btn-bg:#E7EDF6; --btn-fg:#0F1722; --hl:#FFD43B; --hl-soft:#3A3310; --pt:#6F7F96; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F1722; --panel:#172131; --fg:#E7EDF6; --muted:#93A3B8; --line:#2A3850; --grid:#202C40;
+  --btn-bg:#E7EDF6; --btn-fg:#0F1722; --hl:#FFD43B; --hl-soft:#3A3310; --pt:#6F7F96; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{
+  background:var(--bg); color:var(--fg); font-family:var(--font-body); font-size:14px; line-height:1.5;
+  padding-block:16px 32px;
+  padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px));
+}
+.wrap{max-width:1180px;margin:0 auto}
+.top{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between;margin-bottom:16px}
+h1{font-family:var(--font-display);font-size:28px;line-height:1.1;margin:0;letter-spacing:-.01em;text-wrap:balance}
+.sub{margin:4px 0 0;color:var(--muted);max-width:52ch}
+.top-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+h2{font-family:var(--font-display);font-size:15px;margin:0 0 10px;letter-spacing:.01em}
+.grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:16px;align-items:start}
+.side{display:flex;flex-direction:column;gap:16px;min-width:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;min-width:0}
+.controls{display:flex;flex-wrap:wrap;gap:8px 8px;align-items:center;margin-bottom:12px}
+.btn{font:inherit;font-weight:500;padding:7px 12px;border-radius:7px;border:1px solid var(--line);background:var(--panel);color:var(--fg);cursor:pointer;min-height:36px}
+.btn:hover{border-color:var(--fg)}
+.btn.primary{background:var(--btn-bg);color:var(--btn-fg);border-color:var(--btn-bg)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn:focus-visible,input:focus-visible{outline:3px solid var(--hl);outline-offset:2px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel)}
+.seg button{font:inherit;font-weight:500;padding:7px 14px;border:0;background:transparent;color:var(--muted);cursor:pointer;min-height:36px}
+.seg button[aria-pressed="true"]{background:var(--btn-bg);color:var(--btn-fg)}
+.slider{display:flex;align-items:center;gap:8px;margin-left:auto;font-weight:500}
+.slider input{accent-color:var(--fg);width:130px}
+.slider output{font-family:var(--font-mono);min-width:2ch;text-align:right}
+.plotwrap svg{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:8px;background:var(--panel);touch-action:manipulation}
+#plot.place{cursor:crosshair}
+.legend{display:flex;flex-wrap:wrap;gap:4px 16px;color:var(--muted);font-size:12px;margin:8px 0 0}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:50%;background:var(--hl);vertical-align:-2px;margin-right:4px}
+.legend b{display:inline-block;width:18px;border-top:2px dashed var(--fg);vertical-align:3px;margin-right:4px}
+.status{margin:10px 0 0;min-height:3em;font-weight:500}
+.formula{position:relative;border:1px solid var(--line);border-radius:8px;padding:10px 12px 8px;margin-bottom:10px}
+.formula:last-child{margin-bottom:0}
+.formula .fname{font-weight:600;font-size:13px}
+.formula .tag{position:absolute;right:10px;top:8px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.formula.ran{background:var(--hl-soft);border-color:var(--hl)}
+.formula.ran .tag{color:var(--fg)}
+.formula.next{border-style:dashed;border-color:var(--fg)}
+.formula math{font-size:1.2em;display:block;margin:6px 0 2px;overflow-x:auto;max-width:100%}
+.fcap{margin:2px 0 0;color:var(--muted);font-size:12px}
+.exh{margin:0 0 6px}
+.dl{list-style:none;margin:0 0 4px;padding:0;font-family:var(--font-mono);font-size:13px}
+.dl li{display:flex;align-items:center;gap:8px;padding:2px 6px;border-radius:5px}
+.dl li.win{background:var(--hl-soft);outline:1px solid var(--hl)}
+.dl i{width:10px;height:10px;border-radius:50%;display:inline-block}
+.dl span{min-width:6ch}
+.calc{font-family:var(--font-mono);font-size:13px;background:var(--hl-soft);border:1px solid var(--hl);border-radius:6px;padding:6px 8px;overflow-x:auto}
+.note{color:var(--muted);font-size:12px;margin:8px 0 0}
+.tablewrap{overflow-x:auto;margin-top:12px}
+table{border-collapse:collapse;width:100%;font-family:var(--font-mono);font-size:12.5px;font-variant-numeric:tabular-nums}
+th{font-family:var(--font-body);font-weight:600;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);text-align:right;padding:4px 8px;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+td{text-align:right;padding:4px 8px;border-bottom:1px solid var(--grid)}
+td.chg{background:var(--hl);color:#13202F;font-weight:600}
+.sw{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:-1px}
+.chartsvg{display:block;width:100%;height:auto}
+.mut{fill:var(--muted);font-family:var(--font-mono);font-size:10px}
+@media (max-width:860px){.grid{grid-template-columns:minmax(0,1fr)}.slider{margin-left:0}}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Clustering Lab</h1>
+      <p class="sub">Group unlabeled points. Step through each algorithm and watch what changes.</p>
+    </div>
+    <div class="top-actions">
+      <div class="seg" role="group" aria-label="Method">
+        <button id="tabK" aria-pressed="true">k-means</button>
+        <button id="tabH" aria-pressed="false">Hierarchical</button>
+      </div>
+      <button id="newData" class="btn">New data</button>
+    </div>
+  </header>
+
+  <div class="grid">
+    <section class="card" aria-label="Scatter plot">
+      <div class="controls" id="ctlK">
+        <button id="kStep" class="btn primary">Step</button>
+        <button id="kPlay" class="btn">Play</button>
+        <button id="kReset" class="btn" title="Replay from the same starting centroids">Reset</button>
+        <button id="kRandom" class="btn" title="Pick k random data points as starting centroids">Random init</button>
+        <button id="kBad" class="btn" title="Put every centroid inside one blob">Bad init</button>
+        <label class="slider" for="kSlider">k <input id="kSlider" type="range" min="1" max="8" value="3"><output id="kVal">3</output></label>
+      </div>
+      <div class="controls" id="ctlH" hidden>
+        <button id="hStep" class="btn primary">Step: merge closest</button>
+        <button id="hPlay" class="btn">Play</button>
+        <button id="hReset" class="btn">Reset</button>
+        <label class="slider" for="hSlider">Clusters left <input id="hSlider" type="range" min="1" max="54" value="54"><output id="hVal">54</output></label>
+      </div>
+      <div class="plotwrap"><svg id="plot" viewBox="0 0 600 420" role="img" aria-label="Scatter plot of points and cluster centroids"></svg></div>
+      <p class="legend" id="legend"></p>
+      <p class="status" id="status" aria-live="polite"></p>
+    </section>
+
+    <div class="side">
+      <section class="card">
+        <h2>Formulas</h2>
+        <div id="formK">
+          <div class="formula" id="fAssign">
+            <span class="tag"></span><div class="fname">1 · Assign</div>
+            <math display="block"><msub><mi>z</mi><mi>i</mi></msub><mo>=</mo><munder><mi mathvariant="normal">arg min</mi><mi>j</mi></munder><mo>‖</mo><msub><mi>x</mi><mi>i</mi></msub><mo>−</mo><msub><mi>c</mi><mi>j</mi></msub><mo>‖</mo></math>
+            <p class="fcap">Each point joins the centroid with the smallest distance.</p>
+          </div>
+          <div class="formula" id="fUpdate">
+            <span class="tag"></span><div class="fname">2 · Update</div>
+            <math display="block"><msub><mi>c</mi><mi>j</mi></msub><mo>=</mo><mfrac><mn>1</mn><mrow><mo>|</mo><msub><mi>S</mi><mi>j</mi></msub><mo>|</mo></mrow></mfrac><munder><mo>∑</mo><mrow><mi>x</mi><mo>∈</mo><msub><mi>S</mi><mi>j</mi></msub></mrow></munder><mi>x</mi></math>
+            <p class="fcap">S<sub>j</sub> = points in cluster j. The centroid is their average.</p>
+          </div>
+          <div class="formula" id="fCost">
+            <span class="tag"></span><div class="fname">Cost (used in the elbow chart)</div>
+            <math display="block"><mtext>avg dist</mtext><mo>=</mo><mfrac><mn>1</mn><mi>n</mi></mfrac><munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>n</mi></munderover><mo>‖</mo><msub><mi>x</mi><mi>i</mi></msub><mo>−</mo><msub><mi>c</mi><msub><mi>z</mi><mi>i</mi></msub></msub><mo>‖</mo></math>
+            <p class="fcap">Mean distance from each point to its own centroid.</p>
+          </div>
+        </div>
+        <div id="formH" hidden>
+          <div class="formula" id="fPair">
+            <span class="tag"></span><div class="fname">1 · Find the closest pair</div>
+            <math display="block"><mo>(</mo><mi>A</mi><mo>,</mo><mi>B</mi><mo>)</mo><mo>=</mo><munder><mi mathvariant="normal">arg min</mi><mrow><mi>A</mi><mo>≠</mo><mi>B</mi></mrow></munder><mo>‖</mo><msub><mi>c</mi><mi>A</mi></msub><mo>−</mo><msub><mi>c</mi><mi>B</mi></msub><mo>‖</mo></math>
+            <p class="fcap">Compare the centroids of every pair of clusters.</p>
+          </div>
+          <div class="formula" id="fMerge">
+            <span class="tag"></span><div class="fname">2 · Merge and recompute the centroid</div>
+            <math display="block"><msub><mi>c</mi><mrow><mi>A</mi><mi>B</mi></mrow></msub><mo>=</mo><mfrac><mrow><mo>|</mo><mi>A</mi><mo>|</mo><msub><mi>c</mi><mi>A</mi></msub><mo>+</mo><mo>|</mo><mi>B</mi><mo>|</mo><msub><mi>c</mi><mi>B</mi></msub></mrow><mrow><mo>|</mo><mi>A</mi><mo>|</mo><mo>+</mo><mo>|</mo><mi>B</mi><mo>|</mo></mrow></mfrac></math>
+            <p class="fcap">Same as the average of all points in the merged cluster.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2 id="liveTitle">Live numbers</h2>
+        <div id="example"></div>
+        <div class="tablewrap" id="tableWrap"></div>
+      </section>
+
+      <section class="card">
+        <h2 id="chartTitle">Elbow</h2>
+        <svg id="chart" class="chartsvg" viewBox="0 0 340 210" role="img" aria-label="Chart"></svg>
+        <p class="note" id="chartNote"></p>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+//PURE-START
+const W=600,H=420;
+const PAL=['#2E7DD7','#E0662B','#2FA36B','#B04CC9','#9B6B3C','#1FA3B5','#D6457A','#7A6FDB'];
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function gauss(r){let u=0;while(!u)u=r();const v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function makeData(seed,nb){
+  const r=mulberry32(seed),centers=[];let tries=0;
+  while(centers.length<nb&&tries++<800){
+    const c=[90+r()*420,80+r()*260];
+    if(centers.every(q=>Math.hypot(q[0]-c[0],q[1]-c[1])>190))centers.push(c);
+  }
+  const pts=[];
+  centers.forEach((c,bi)=>{for(let i=0;i<16;i++)pts.push({x:clamp(c[0]+gauss(r)*22,12,W-12),y:clamp(c[1]+gauss(r)*22,12,H-12),blob:bi})});
+  let o=0,t2=0;
+  while(o<5&&t2++<800){
+    const p=[20+r()*(W-40),20+r()*(H-40)];
+    if(centers.every(q=>Math.hypot(q[0]-p[0],q[1]-p[1])>75)){pts.push({x:p[0],y:p[1],blob:-1});o++}
+  }
+  return{pts,centers};
+}
+function nearest(p,cs){let b=0,bd=1e18;for(let j=0;j<cs.length;j++){const d=Math.hypot(p.x-cs[j].x,p.y-cs[j].y);if(d<bd){bd=d;b=j}}return[b,bd]}
+function avgDist(pts,cs,asg){let s=0;for(let i=0;i<pts.length;i++){const c=cs[asg[i]];s+=Math.hypot(pts[i].x-c.x,pts[i].y-c.y)}return s/pts.length}
+function meanUpdate(pts,asg,cs){
+  const s=cs.map(()=>({x:0,y:0,n:0}));
+  pts.forEach((p,i)=>{const t=s[asg[i]];t.x+=p.x;t.y+=p.y;t.n++});
+  return cs.map((c,j)=>s[j].n?{x:s[j].x/s[j].n,y:s[j].y/s[j].n}:{x:c.x,y:c.y});
+}
+function lloyd(pts,cs0){
+  let cs=cs0.map(c=>({x:c.x,y:c.y}));const asg=new Array(pts.length).fill(-1);
+  for(let it=0;it<100;it++){
+    let ch=0;
+    for(let i=0;i<pts.length;i++){const j=nearest(pts[i],cs)[0];if(j!==asg[i]){asg[i]=j;ch++}}
+    if(!ch)break;
+    cs=meanUpdate(pts,asg,cs);
+  }
+  return{cs,asg};
+}
+function kppInit(pts,k,r){
+  const cs=[pts[Math.floor(r()*pts.length)]];
+  while(cs.length<k){
+    const d=pts.map(p=>Math.pow(nearest(p,cs)[1],2));
+    const tot=d.reduce((a,b)=>a+b,0);let x=r()*tot,i=0;
+    while(i<d.length-1&&x>d[i]){x-=d[i];i++}
+    cs.push(pts[i]);
+  }
+  return cs.map(c=>({x:c.x,y:c.y}));
+}
+function computeElbow(pts,seed){
+  const r=mulberry32(seed+1),out=[];
+  for(let k=1;k<=8;k++){
+    let best=1e18;
+    for(let t=0;t<10;t++){const res=lloyd(pts,kppInit(pts,k,r));best=Math.min(best,avgDist(pts,res.cs,res.asg))}
+    out.push(best);
+  }
+  return out;
+}
+function findElbow(v){
+  const lo=Math.min(...v),hi=Math.max(...v);let bk=1,bs=-1e18;
+  v.forEach((val,i)=>{const xn=i/(v.length-1),yn=(val-lo)/(hi-lo||1),s=(1-xn)-yn;if(s>bs){bs=s;bk=i+1}});
+  return bk;
+}
+function fullHier(pts){
+  let cl=pts.map((p,i)=>({id:i,n:1,x:p.x,y:p.y}));const merges=[];let next=pts.length;
+  while(cl.length>1){
+    let bi=0,bj=1,bd=1e18;
+    for(let i=0;i<cl.length;i++)for(let j=i+1;j<cl.length;j++){const d=Math.hypot(cl[i].x-cl[j].x,cl[i].y-cl[j].y);if(d<bd){bd=d;bi=i;bj=j}}
+    const a=cl[bi],b=cl[bj],n=a.n+b.n,nc={id:next++,n,x:(a.x*a.n+b.x*b.n)/n,y:(a.y*a.n+b.y*b.n)/n};
+    merges.push({a:a.id,b:b.id,d:bd,id:nc.id,an:a.n,bn:b.n,ax:a.x,ay:a.y,bx:b.x,by:b.y,cx:nc.x,cy:nc.y,n});
+    cl.splice(bj,1);cl[bi]=nc;
+  }
+  return merges;
+}
+function leafOrder(n,M){
+  const order=[],st=[n+M.length-1];
+  while(st.length){const id=st.pop();if(id<n)order.push(id);else{const m=M[id-n];st.push(m.b);st.push(m.a)}}
+  return order;
+}
+//PURE-END
+
+(function(){
+const $=id=>document.getElementById(id);
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const f1=v=>v.toFixed(1),r0=v=>Math.round(v);
+const S={mode:'k',data:null,k:3,cs:[],init:[],asg:[],phase:'assign',iter:0,converged:false,custom:false,
+  changed:new Set(),lastMove:null,lastOp:null,flash:{n:new Set(),c:new Set()},msg:'',example:'',anim:null,
+  elbow:[],elbowK:3,playing:false,timer:null,hier:{merges:[],order:[],xp:[],hh:[],step:0},seed:11,nb:3};
+
+/* ---------- state setup ---------- */
+function resetRun(){
+  stopPlay();
+  S.asg=new Array(S.data.pts.length).fill(-1);S.phase='assign';S.iter=0;S.converged=false;
+  S.changed=new Set();S.lastMove=null;S.lastOp=null;S.flash={n:new Set(),c:new Set()};S.anim=null;
+  S.cs=S.init.map(c=>({x:c.x,y:c.y}));
+  S.example='';
+  S.msg=S.cs.length===S.k?'Centroids are placed. Press Step: every point will pick its nearest centroid.':
+    'Placed '+S.cs.length+' of '+S.k+' centroids. Click the plot to place '+(S.k-S.cs.length)+' more.';
+}
+function setInit(cs,custom){S.init=cs.map(c=>({x:c.x,y:c.y}));S.custom=custom;resetRun()}
+function randomInit(){
+  const idx=[],n=S.data.pts.length;
+  while(idx.length<S.k){const i=Math.floor(Math.random()*n);if(!idx.includes(i))idx.push(i)}
+  setInit(idx.map(i=>S.data.pts[i]),false);
+  S.msg='Random start: '+S.k+' centroids sit on random data points. Press Step to begin.';
+}
+function badInit(){
+  const pts=S.data.pts,k=S.k;let worst=null,wc=-1;
+  for(let t=0;t<80;t++){
+    const b=S.data.centers[Math.floor(Math.random()*S.data.centers.length)];
+    const a=Math.random()<.7?{x:b[0],y:b[1]}:pts[Math.floor(Math.random()*pts.length)];
+    const cs=[];for(let j=0;j<k;j++)cs.push({x:a.x+(Math.random()-.5)*30,y:a.y+(Math.random()-.5)*30});
+    const r=lloyd(pts,cs),c=avgDist(pts,r.cs,r.asg);
+    if(c>wc){wc=c;worst=cs}
+  }
+  setInit(worst,true);
+  S.msg='Bad start: all '+k+' centroids are bunched in one spot, chosen as the worst of 80 tries. Step until it stops, then compare its cost with the best for k='+k+' on the elbow chart.';
+}
+function newData(first){
+  S.seed=first?11:(Math.random()*1e9|0);S.nb=first?3:(Math.random()<.5?3:4);
+  S.data=makeData(S.seed,S.nb);
+  S.elbow=computeElbow(S.data.pts,S.seed);S.elbowK=findElbow(S.elbow);
+  const n=S.data.pts.length,M=fullHier(S.data.pts);
+  const order=leafOrder(n,M),xp=new Array(n+M.length),hh=new Array(n+M.length).fill(0);
+  order.forEach((leaf,i)=>xp[leaf]=i);
+  M.forEach(m=>{xp[m.id]=(xp[m.a]+xp[m.b])/2;hh[m.id]=m.d});
+  S.hier={merges:M,order,xp,hh,step:0};
+  const hs=$('hSlider');hs.max=n;hs.value=n;
+  stopPlay();randomInit();hierMsg();
+  render();
+}
+
+/* ---------- k-means steps ---------- */
+function exAssign(i){
+  const p=S.data.pts[i],ds=S.cs.map(c=>Math.hypot(p.x-c.x,p.y-c.y)),m=ds.indexOf(Math.min(...ds));
+  return '<p class="exh">One point, <b>('+r0(p.x)+', '+r0(p.y)+')</b>, measures its distance to every centroid:</p><ul class="dl">'+
+    ds.map((d,j)=>'<li class="'+(j===m?'win':'')+'"><i style="background:'+PAL[j]+'"></i>c<sub>'+(j+1)+'</sub> <span>'+f1(d)+'</span>'+(j===m?'<b>nearest</b>':'')+'</li>').join('')+'</ul>';
+}
+function kStep(){
+  if(S.cs.length!==S.k||S.converged)return;
+  const pts=S.data.pts;
+  if(S.phase==='assign'){
+    const prev=S.asg.slice(),pc=new Array(S.k).fill(0),nc=new Array(S.k).fill(0);
+    prev.forEach(a=>{if(a>=0)pc[a]++});
+    const chg=new Set();
+    pts.forEach((p,i)=>{const j=nearest(p,S.cs)[0];S.asg[i]=j;if(j!==prev[i])chg.add(i)});
+    S.asg.forEach(a=>nc[a]++);
+    S.changed=chg;S.lastMove=null;S.lastOp='assign';
+    S.flash={n:new Set(nc.map((v,j)=>v!==pc[j]?j:-1).filter(j=>j>=0)),c:new Set()};
+    const first=[...chg][0];
+    S.example=exAssign(first===undefined?0:first);
+    if(S.iter>0&&chg.size===0){
+      S.converged=true;stopPlay();
+      const cur=avgDist(pts,S.cs,S.asg),best=S.elbow[S.k-1];
+      S.msg='Converged after '+S.iter+' rounds: no point changed cluster, so the centroids would not move again.';
+      if(cur>best*1.12)S.msg+=' Final avg distance '+f1(cur)+' is '+r0((cur/best-1)*100)+'% above the best found for k='+S.k+' ('+f1(best)+'). This start got stuck in a poor local optimum. Try Random init.';
+      else S.msg+=' Final avg distance '+f1(cur)+' matches the best found for k='+S.k+' ('+f1(best)+').';
+    }else{
+      S.phase='move';
+      S.msg='Assign: '+chg.size+' of '+pts.length+' points changed cluster (yellow halos). Next: move the centroids.';
+    }
+  }else{
+    const old=S.cs.map(c=>({x:c.x,y:c.y})),sums=S.cs.map(()=>({sx:0,sy:0,n:0}));
+    pts.forEach((p,i)=>{const s=sums[S.asg[i]];s.sx+=p.x;s.sy+=p.y;s.n++});
+    const nw=meanUpdate(pts,S.asg,S.cs),sh=nw.map((c,j)=>Math.hypot(c.x-old[j].x,c.y-old[j].y));
+    S.cs=nw;S.lastMove={from:old,to:nw,shift:sh};S.lastOp='move';S.changed=new Set();
+    S.flash={n:new Set(),c:new Set(sh.map((s,j)=>s>0.05?j:-1).filter(j=>j>=0))};
+    S.anim=RM?null:{from:old,to:nw,t0:performance.now(),dur:450};
+    S.iter++;S.phase='assign';
+    const jm=sh.indexOf(Math.max(...sh)),s=sums[jm];
+    S.example='<p class="exh"><span class="sw" style="background:'+PAL[jm]+'"></span>Cluster '+(jm+1)+' had the biggest move. Its new centroid is the mean of its '+s.n+' points:</p>'+
+      '<div class="calc">c<sub>'+(jm+1)+'</sub> = (Σx, Σy) / n<br>= ('+r0(s.sx)+', '+r0(s.sy)+') / '+s.n+'<br>= <b>('+f1(nw[jm].x)+', '+f1(nw[jm].y)+')</b>, moved '+f1(sh[jm])+' px</div>';
+    S.msg='Update: centroids moved to their cluster means (dashed lines). Largest move '+f1(Math.max(...sh))+' px. Next: assign.';
+    if(Math.max(...sh)<0.05){S.converged=true;stopPlay();S.msg='Converged: centroids stopped moving.'}
+  }
+  render();
+}
+
+/* ---------- hierarchical ---------- */
+function hierState(step){
+  const n=S.data.pts.length,M=S.hier.merges,mem={},col={},act=new Set();
+  for(let i=0;i<n;i++){mem[i]=[i];col[i]=null;act.add(i)}
+  let nc=0;
+  for(let m=0;m<step;m++){
+    const g=M[m],ca=col[g.a],cb=col[g.b];let c;
+    if(ca==null&&cb==null)c=(nc++)%8;else if(ca==null)c=cb;else if(cb==null)c=ca;else c=g.an>=g.bn?ca:cb;
+    col[g.id]=c;mem[g.id]=mem[g.a].concat(mem[g.b]);act.delete(g.a);act.delete(g.b);act.add(g.id);
+  }
+  const clusters=[],pcol=new Array(n).fill(null);
+  act.forEach(id=>{
+    const isLeaf=id<n,cx=isLeaf?S.data.pts[id].x:M[id-n].cx,cy=isLeaf?S.data.pts[id].y:M[id-n].cy;
+    clusters.push({id,n:mem[id].length,cx,cy,color:col[id]});
+    mem[id].forEach(i=>pcol[i]=col[id]);
+  });
+  return{clusters,pcol,last:step>0?M[step-1]:null,lastMembers:step>0?mem[M[step-1].id]:[]};
+}
+function hierMsg(){
+  const n=S.data.pts.length,st=S.hier.step,M=S.hier.merges;
+  if(st===0){S.msg='Every point starts as its own cluster ('+n+' clusters). Press Step: the two clusters with the closest centroids merge.';return}
+  const g=M[st-1];
+  S.msg='Merge '+st+' of '+(n-1)+': centroids '+f1(g.d)+' apart, so those two clusters join. '+(n-st)+' cluster'+(n-st===1?'':'s')+' left.';
+  if(st===n-1)S.msg+=' Done. The last merges are the tallest because they join clusters that are far apart.';
+}
+function hStep(){
+  const n=S.data.pts.length;
+  if(S.hier.step>=n-1){stopPlay();return}
+  S.hier.step++;hierMsg();
+  if(S.hier.step>=n-1)stopPlay();
+  render();
+}
+function hReset(){stopPlay();S.hier.step=0;hierMsg();render()}
+
+/* ---------- play ---------- */
+function stopPlay(){S.playing=false;if(S.timer){clearInterval(S.timer);S.timer=null}$('kPlay').textContent='Play';$('hPlay').textContent='Play'}
+function togglePlay(){
+  if(S.playing){stopPlay();return}
+  if(S.mode==='k'){if(S.cs.length!==S.k||S.converged)return}
+  else if(S.hier.step>=S.data.pts.length-1)return;
+  S.playing=true;$('kPlay').textContent='Pause';$('hPlay').textContent='Pause';
+  S.timer=setInterval(()=>S.mode==='k'?kStep():hStep(),S.mode==='k'?800:260);
+}
+
+/* ---------- drawing ---------- */
+function pos(){
+  if(!S.anim)return S.cs;
+  const t=Math.min(1,(performance.now()-S.anim.t0)/S.anim.dur),e=t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+  return S.anim.to.map((c,j)=>({x:S.anim.from[j].x+(c.x-S.anim.from[j].x)*e,y:S.anim.from[j].y+(c.y-S.anim.from[j].y)*e}));
+}
+function tick(){
+  drawPlot();
+  if(S.anim){if((performance.now()-S.anim.t0)>=S.anim.dur){S.anim=null;drawPlot()}else requestAnimationFrame(tick)}
+}
+const DEFS='<defs><pattern id="gp" width="30" height="30" patternUnits="userSpaceOnUse"><path d="M30 0H0V30" fill="none" style="stroke:var(--grid)" stroke-width="1"/></pattern></defs><rect width="600" height="420" fill="url(#gp)"/>';
+function drawPlot(){
+  const pts=S.data.pts;let s=DEFS;
+  if(S.mode==='k'){
+    const cp=pos(),assigned=S.asg[0]>=0;
+    if(assigned)pts.forEach((p,i)=>{const c=cp[S.asg[i]];s+='<line x1="'+p.x+'" y1="'+p.y+'" x2="'+c.x+'" y2="'+c.y+'" style="stroke:'+PAL[S.asg[i]]+';stroke-opacity:.22;stroke-width:1"/>'});
+    S.changed.forEach(i=>{s+='<circle cx="'+pts[i].x+'" cy="'+pts[i].y+'" r="9" style="fill:var(--hl)"/>'});
+    pts.forEach((p,i)=>{s+='<circle cx="'+p.x+'" cy="'+p.y+'" r="4.2" style="fill:'+(assigned?PAL[S.asg[i]]:'var(--pt)')+'"/>'});
+    if(S.lastMove)S.lastMove.from.forEach((c,j)=>{const t=S.lastMove.to[j];
+      s+='<line x1="'+c.x+'" y1="'+c.y+'" x2="'+t.x+'" y2="'+t.y+'" style="stroke:var(--fg);stroke-width:1.5" stroke-dasharray="4 3"/><circle cx="'+c.x+'" cy="'+c.y+'" r="8" style="fill:none;stroke:var(--fg);stroke-width:1.5" stroke-dasharray="3 2"/>'});
+    cp.forEach((c,j)=>{s+='<circle cx="'+c.x+'" cy="'+c.y+'" r="10" style="fill:'+PAL[j]+';stroke:var(--fg);stroke-width:2.5"/><text x="'+c.x+'" y="'+(c.y+4)+'" text-anchor="middle" style="fill:#fff;font:700 11px var(--font-display)">'+(j+1)+'</text>'});
+  }else{
+    const hs=hierState(S.hier.step);
+    hs.lastMembers.forEach(i=>{s+='<circle cx="'+pts[i].x+'" cy="'+pts[i].y+'" r="8" style="fill:var(--hl)"/>'});
+    pts.forEach((p,i)=>{const c=hs.pcol[i];s+='<circle cx="'+p.x+'" cy="'+p.y+'" r="4" style="fill:'+(c==null?'var(--pt)':PAL[c])+'"/>'});
+    if(hs.last){const g=hs.last;
+      s+='<line x1="'+g.ax+'" y1="'+g.ay+'" x2="'+g.bx+'" y2="'+g.by+'" style="stroke:var(--fg);stroke-width:1.5" stroke-dasharray="4 3"/>';
+      s+='<circle cx="'+g.ax+'" cy="'+g.ay+'" r="8" style="fill:none;stroke:var(--fg);stroke-width:1.5" stroke-dasharray="3 2"/><circle cx="'+g.bx+'" cy="'+g.by+'" r="8" style="fill:none;stroke:var(--fg);stroke-width:1.5" stroke-dasharray="3 2"/>';}
+    hs.clusters.forEach(c=>{if(c.n>1){const col=c.color==null?'var(--pt)':PAL[c.color];
+      s+='<rect x="'+(c.cx-5)+'" y="'+(c.cy-5)+'" width="10" height="10" transform="rotate(45 '+c.cx+' '+c.cy+')" style="fill:'+col+';stroke:var(--fg);stroke-width:2"/>'}});
+  }
+  $('plot').innerHTML=s;
+}
+
+function drawElbow(){
+  const el=S.elbow,cw=340,ch=210,l=44,r=14,t=16,b=40,pw=cw-l-r,ph=ch-t-b;
+  const live=S.asg[0]>=0?avgDist(S.data.pts,S.cs,S.asg):null;
+  const maxV=Math.max(...el)*1.25,X=k=>l+(k-1)/7*pw,Y=v=>Math.max(t+2,t+ph-(v/maxV)*ph);
+  let s='';
+  for(let i=0;i<=4;i++){const v=maxV*i/4,y=Y(v);s+='<line x1="'+l+'" x2="'+(cw-r)+'" y1="'+y+'" y2="'+y+'" style="stroke:var(--grid)"/><text class="mut" x="'+(l-6)+'" y="'+(y+3)+'" text-anchor="end">'+r0(v)+'</text>'}
+  for(let k=1;k<=8;k++)s+='<text class="mut" x="'+X(k)+'" y="'+(t+ph+14)+'" text-anchor="middle">'+k+'</text>';
+  s+='<line x1="'+l+'" x2="'+l+'" y1="'+t+'" y2="'+(t+ph)+'" style="stroke:var(--muted)"/><line x1="'+l+'" x2="'+(cw-r)+'" y1="'+(t+ph)+'" y2="'+(t+ph)+'" style="stroke:var(--muted)"/>';
+  s+='<text class="mut" x="'+(l+pw/2)+'" y="'+(ch-6)+'" text-anchor="middle">k (number of clusters)</text>';
+  s+='<text class="mut" transform="translate(11 '+(t+ph/2)+') rotate(-90)" text-anchor="middle">avg distance to centroid</text>';
+  s+='<line x1="'+X(S.k)+'" x2="'+X(S.k)+'" y1="'+t+'" y2="'+(t+ph)+'" style="stroke:var(--fg)" stroke-dasharray="3 3"/>';
+  const ek=S.elbowK;
+  s+='<circle cx="'+X(ek)+'" cy="'+Y(el[ek-1])+'" r="11" style="fill:var(--hl)"/>';
+  s+='<polyline fill="none" style="stroke:var(--fg);stroke-width:2" points="'+el.map((v,i)=>X(i+1)+','+Y(v)).join(' ')+'"/>';
+  el.forEach((v,i)=>{s+='<circle cx="'+X(i+1)+'" cy="'+Y(v)+'" r="3.8" style="fill:var(--fg)"/>'});
+  s+='<text x="'+(X(ek)+14)+'" y="'+(Y(el[ek-1])-8)+'" style="fill:var(--fg);font:600 11px var(--font-body)">elbow</text>';
+  if(live!=null){const x=X(S.k),y=Y(live);s+='<polygon points="'+x+','+(y-7)+' '+(x+7)+','+y+' '+x+','+(y+7)+' '+(x-7)+','+y+'" style="fill:var(--panel);stroke:var(--fg);stroke-width:2"/>'}
+  $('chart').innerHTML=s;
+  $('chartNote').innerHTML='<span style="font-family:var(--font-mono)">●</span> best of 10 runs at each k &nbsp; <span style="font-family:var(--font-mono)">◆</span> your current run at k='+S.k+(live!=null?' ('+f1(live)+')':'')+'. The elbow is where adding clusters stops paying off. Elbow here: k='+ek+'. This data was generated with '+S.nb+' blobs plus 5 outliers, which keep the curve from flattening fully.';
+}
+
+function drawDendro(){
+  const n=S.data.pts.length,H0=S.hier,M=H0.merges,cw=340,ch=210,l=36,r=8,t=10,b=14,pw=cw-l-r,ph=ch-t-b;
+  const maxD=M[M.length-1].d>0?Math.max(...M.map(m=>m.d)):1;
+  const X=i=>l+(i+.5)/n*pw,Y=d=>t+ph-Math.sqrt(Math.max(0,d)/maxD)*ph;
+  const hs=hierState(H0.step);let s='';
+  [0,5,20,50,100,200,400].filter(v=>v<=maxD).forEach(v=>{const y=Y(v);s+='<line x1="'+l+'" x2="'+(cw-r)+'" y1="'+y+'" y2="'+y+'" style="stroke:var(--grid)"/><text class="mut" x="'+(l-4)+'" y="'+(y+3)+'" text-anchor="end">'+v+'</text>'});
+  s+='<text class="mut" transform="translate(9 '+(t+ph/2)+') rotate(-90)" text-anchor="middle">merge distance (sqrt scale)</text>';
+  for(let m=0;m<H0.step;m++){
+    const g=M[m],xa=X(H0.xp[g.a]),xb=X(H0.xp[g.b]),ya=Y(H0.hh[g.a]),yb=Y(H0.hh[g.b]),yh=Y(g.d),last=m===H0.step-1;
+    const d='M'+xa+' '+ya+'L'+xa+' '+yh+'L'+xb+' '+yh+'L'+xb+' '+yb;
+    if(last)s+='<path d="'+d+'" fill="none" style="stroke:var(--hl);stroke-width:7;stroke-linejoin:round;stroke-linecap:round"/>';
+    s+='<path d="'+d+'" fill="none" style="stroke:'+(last?'var(--fg)':'var(--muted)')+';stroke-width:'+(last?2:1.2)+';stroke-linejoin:round"/>';
+  }
+  if(hs.last){const y=Y(hs.last.d);s+='<line x1="'+l+'" x2="'+(cw-r)+'" y1="'+y+'" y2="'+y+'" style="stroke:var(--fg)" stroke-dasharray="3 3"/><text class="mut" x="'+(cw-r)+'" y="'+(y-3)+'" text-anchor="end">d = '+f1(hs.last.d)+'</text>'}
+  H0.order.forEach((leaf,i)=>{const c=hs.pcol[leaf];s+='<rect x="'+(X(i)-pw/n*.4)+'" y="'+(t+ph+2)+'" width="'+(pw/n*.8)+'" height="6" style="fill:'+(c==null?'var(--pt)':PAL[c])+'"/>'});
+  $('chart').innerHTML=s;
+  $('chartNote').textContent='Bars along the bottom are the '+n+' points, colored by their current cluster. Each U joins two clusters at the distance between their centroids. The highlighted U is the latest merge.';
+}
+
+/* ---------- side panels + controls ---------- */
+function tagF(id,state){const e=$(id);e.classList.toggle('ran',state==='ran');e.classList.toggle('next',state==='next');e.querySelector('.tag').textContent=state==='ran'?'just ran':state==='next'?'next':''}
+function tableHTML(){
+  const cnt=new Array(S.cs.length).fill(0);if(S.asg[0]>=0)S.asg.forEach(a=>cnt[a]++);
+  const has=S.asg[0]>=0;
+  let h='<table><thead><tr><th>Cluster</th><th>n</th><th>centroid x</th><th>centroid y</th><th>moved</th></tr></thead><tbody>';
+  S.cs.forEach((c,j)=>{
+    const sh=S.lastMove?S.lastMove.shift[j]:null;
+    h+='<tr><td><span class="sw" style="background:'+PAL[j]+'"></span>c'+(j+1)+'</td><td class="'+(S.flash.n.has(j)?'chg':'')+'">'+(has?cnt[j]:'–')+'</td><td class="'+(S.flash.c.has(j)?'chg':'')+'">'+f1(c.x)+'</td><td class="'+(S.flash.c.has(j)?'chg':'')+'">'+f1(c.y)+'</td><td>'+(sh==null?'–':f1(sh))+'</td></tr>';
+  });
+  return h+'</tbody></table>';
+}
+function hierExample(){
+  const n=S.data.pts.length,st=S.hier.step;
+  if(st===0)return '<p class="exh">Nothing merged yet. All '+n+' points are separate clusters, each with its own centroid.</p>';
+  const g=S.hier.merges[st-1];
+  return '<p class="exh">Merge '+st+': the closest pair of centroids.</p><ul class="dl"><li>A: n='+g.an+' at ('+f1(g.ax)+', '+f1(g.ay)+')</li><li>B: n='+g.bn+' at ('+f1(g.bx)+', '+f1(g.by)+')</li><li class="win">distance <span>'+f1(g.d)+'</span></li></ul>'+
+    '<div class="calc">c<sub>AB</sub> = ('+g.an+'·c<sub>A</sub> + '+g.bn+'·c<sub>B</sub>) / '+g.n+'<br>= <b>('+f1(g.cx)+', '+f1(g.cy)+')</b></div>';
+}
+function updateSide(){
+  const isK=S.mode==='k';
+  $('formK').hidden=!isK;$('formH').hidden=isK;$('tableWrap').hidden=!isK;
+  $('liveTitle').textContent=isK?'Live numbers':'Latest merge';
+  $('chartTitle').textContent=isK?'Elbow: average distance vs k':'Dendrogram (builds as you merge)';
+  if(isK){
+    if(S.converged){tagF('fAssign','');tagF('fUpdate','')}
+    else if(S.lastOp==='assign'){tagF('fAssign','ran');tagF('fUpdate','next')}
+    else if(S.lastOp==='move'){tagF('fUpdate','ran');tagF('fAssign','next')}
+    else{tagF('fAssign',S.cs.length===S.k?'next':'');tagF('fUpdate','')}
+    tagF('fCost','');
+    $('example').innerHTML=S.example||'<p class="exh">Press Step to see the numbers behind each move.</p>';
+    $('tableWrap').innerHTML=tableHTML();
+    drawElbow();
+  }else{
+    const done=S.hier.step>=S.data.pts.length-1;
+    tagF('fPair',done?'':S.hier.step===0?'next':'ran');tagF('fMerge',done?'':S.hier.step===0?'next':'ran');
+    $('example').innerHTML=hierExample();
+    drawDendro();
+  }
+}
+function updateControls(){
+  const isK=S.mode==='k';
+  $('ctlK').hidden=!isK;$('ctlH').hidden=isK;
+  $('tabK').setAttribute('aria-pressed',isK);$('tabH').setAttribute('aria-pressed',!isK);
+  $('plot').classList.toggle('place',isK);
+  $('kStep').disabled=S.cs.length!==S.k||S.converged;$('kPlay').disabled=$('kStep').disabled;
+  $('kSlider').value=S.k;$('kVal').textContent=S.k;
+  const n=S.data.pts.length;
+  $('hStep').disabled=S.hier.step>=n-1;$('hPlay').disabled=$('hStep').disabled;
+  $('hSlider').value=n-S.hier.step;$('hVal').textContent=n-S.hier.step;
+  $('legend').innerHTML=isK?'<span><i></i>changed this step</span><span><b></b>centroid movement</span><span>Click the plot to place centroids</span>':'<span><i></i>just merged</span><span><b></b>closest pair</span><span>◆ centroid of a merged cluster</span>';
+  $('status').textContent=isK?S.msg:S.msg;
+  $('plot').setAttribute('aria-label',isK?'k-means scatter plot with '+S.k+' centroids':'Hierarchical clustering scatter plot, '+(n-S.hier.step)+' clusters');
+}
+function render(){updateControls();updateSide();tick()}
+
+/* ---------- events ---------- */
+$('kStep').onclick=kStep;$('kPlay').onclick=togglePlay;
+$('kReset').onclick=()=>{resetRun();render()};
+$('kRandom').onclick=()=>{randomInit();render()};
+$('kBad').onclick=()=>{badInit();render()};
+$('kSlider').oninput=e=>{S.k=+e.target.value;randomInit();render()};
+$('hStep').onclick=hStep;$('hPlay').onclick=togglePlay;$('hReset').onclick=hReset;
+$('hSlider').oninput=e=>{stopPlay();S.hier.step=S.data.pts.length-(+e.target.value);hierMsg();render()};
+$('newData').onclick=()=>newData(false);
+$('tabK').onclick=()=>{if(S.mode!=='k'){stopPlay();S.mode='k';render()}};
+$('tabH').onclick=()=>{if(S.mode!=='h'){stopPlay();S.mode='h';render()}};
+$('plot').addEventListener('click',e=>{
+  if(S.mode!=='k')return;
+  const rc=$('plot').getBoundingClientRect(),x=(e.clientX-rc.left)*W/rc.width,y=(e.clientY-rc.top)*H/rc.height,pt={x,y};
+  stopPlay();
+  let cs=S.custom?S.init.map(c=>({x:c.x,y:c.y})):[];
+  if(cs.length<S.k)cs.push(pt);
+  else{const j=nearest(pt,cs)[0];cs[j]=pt}
+  setInit(cs,true);render();
+});
+
+newData(true);
+})();
+</script>
+
+</body></html>
